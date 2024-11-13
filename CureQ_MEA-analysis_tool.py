@@ -176,9 +176,14 @@ class VerticalScrolledFrame(ttk.Frame):
             # Update the scrollbars to match the size of the inner frame.
             size = (interior.winfo_reqwidth(), interior.winfo_reqheight())
             canvas.config(scrollregion="0 0 %s %s" % size)
+            # Check if the frame width is fully visible
             if interior.winfo_reqwidth() != canvas.winfo_width():
                 # Update the canvas's width to fit the inner frame.
-                canvas.config(width=interior.winfo_reqwidth())
+                canvas.config(width=interior.winfo_reqwidth() + 1) # +1 to see all visualizations in scrollable ML results
+            max_height = 800
+            # Prevent that frame is becoming to large
+            if interior.winfo_reqheight() > max_height:
+                canvas.config(height=max_height)
         interior.bind('<Configure>', _configure_interior)
 
         def _configure_canvas(event):
@@ -719,6 +724,10 @@ def import_parameters():
 
 default_parameters=ttk.Button(master=parameterframe.interior, text="Import parameters", command=import_parameters)
 default_parameters.grid(row=3, column=2, padx=10, pady=(10,20), sticky='nsew')
+
+# Button to go to the main frame window from the parameters frame
+main_frame_button_1 = ttk.Button(master=parameterframe.interior, text="Go back to the main menu and don't save parameters", command=lambda: go_to_main_frame())
+main_frame_button_1.grid(row=4, column=0, padx=10, pady=(0, 20), ipadx=25, ipady=25, sticky='nesw', columnspan=3)
 
 
 def data_analysis():
@@ -1879,15 +1888,16 @@ def electrode_button_pressed(electrode):
 
 '''
 
-AI analysis
+Machine Learning analysis
 
-Front-end Lay-out of the choose feature file frame
+ML button on main menu
 
 '''
 # Choose feature file frame - Rectangular window which is used to organize a group of complex widgets
 choose_feature_file_frame = ttk.Frame(root)
 
-# Button to go to the AI window frame
+
+# Button to go to the ML window frame
 # The lambda function in the command parameter, ensures a function can be used before the function is defined
 choose_feature_file_frame_button = ttk.Button(master=main_frame, text="ML\nAnalysis", style="bigbutton.TButton", command=lambda: go_to_choose_feature_file_frame())
 # Grid puts the widgets in a 2-dimensional table. 
@@ -1895,23 +1905,74 @@ choose_feature_file_frame_button = ttk.Button(master=main_frame, text="ML\nAnaly
 choose_feature_file_frame_button.grid(row=1, column=1, padx=10, pady=10, sticky='nesw', ipadx=25, ipady=25)
 
 
+'''
+Back-end - Dynamic navigation menu for each frame
+'''
+global navigation_index
+navigation_index = 1
+# Create a dynamic navigation menu for each frame
+def dynamic_navigation_menu(master):
+    global navigation_index
+    # Inactive color
+    inactive_color = "#AAAFB4"
+    style = ttk.Style()
+    # Create inactive buttons for buttons that can not be pressed yet
+    style.configure("Label_style.TButton", foreground=inactive_color)
+    style.configure("Choose_model_style.TButton", foreground=inactive_color)
+    style.configure("Train_model_style.TButton", foreground=inactive_color)
+    style.configure("Model_results_style.TButton", foreground=inactive_color)
+    # Make inactive buttons active if it is allowed in the process
+            
+
+    # Button to go to the main frame window
+    menu_main_frame = ttk.Button(master=master, text="Main menu", command=lambda: go_to_main_frame())
+    menu_main_frame.grid(row=0, column=0, padx=10, pady=(10, 12), sticky='new')
+
+    # Button to navigate to feature file selection frame
+    menu_select_file = ttk.Button(master=master, text="1. Select file", command=lambda: go_to_choose_feature_file_frame())
+    menu_select_file.grid(row=1, column=0, padx=10, pady=(0, 12), sticky='nesw')
+
+    # Button to navigate to data labelling frame
+    menu_label_data = ttk.Button(master=master, text="2. Label data", style="Label_style.TButton", command=lambda: go_to_label_frame())
+    menu_label_data.grid(row=2, column=0, padx=10, pady=(0, 12), sticky='nesw')
+
+    # Button to navigate to model selection frame
+    menu_choose_model = ttk.Button(master=master, text="3. Choose ML model", style="Choose_model_style.TButton", command=lambda: go_to_choose_model_frame())
+    menu_choose_model.grid(row=3, column=0, padx=10, pady=(0, 12), sticky='nesw')
+
+    # Button to navigate to Machine Learning model training frame
+    menu_train_model = ttk.Button(master=master, text="4. Train ML model", style="Train_model_style.TButton", command=lambda: go_to_train_model_frame())
+    menu_train_model.grid(row=4, column=0, padx=10, pady=(0, 12), sticky='nesw')
+
+    # Button to navigate to Machine Learning results frame
+    menu_ml_results = ttk.Button(master=master, text="5. ML results", style="Model_results_style.TButton", command=lambda: go_to_ml_results_frame())
+    menu_ml_results.grid(row=5, column=0, padx=10, pady=(0, 10), sticky='nesw')
+
+
+''' 
+Front-end - Lay-out of the choose feature file frame 
+'''
 # Container widget where the user can select the filename with all MEA features
-select_feature_file = ttk.LabelFrame(master=choose_feature_file_frame, text='Select file with the MEA features', style="Custom.TLabelframe")
-select_feature_file.grid(row=0, column=0, padx=10, pady=10, sticky='nesw')
+select_feature_file = ttk.LabelFrame(master=choose_feature_file_frame, text='Select MEA features file', style="Custom.TLabelframe")
+select_feature_file.grid(row=0, column=1, padx=10, pady=10, sticky='new')
 
 # Button to select the filename with all MEA features
-select_feature_file_button = ttk.Button(master=select_feature_file, text="Choose a file", command=lambda: open_feature_file())
+select_feature_file_button = ttk.Button(master=select_feature_file, text="Choose file", command=lambda: open_feature_file())
 select_feature_file_button.grid(row=0, column=0, padx=10, pady=10, sticky='nesw')
 
 # Button to Load the chosen csv file
 load_feature_data_button = ttk.Button(master=select_feature_file, text="Load File", command=lambda: load_feature_data())
 load_feature_data_button.grid(row=0, column=1, padx=10, pady=10, sticky='nesw')
 
+# Button to show / hide parameter options
+parameter_options = ttk.Button(master=select_feature_file, text="Parameter options", command=lambda: show_parameter_options(preparation_parameters))
+parameter_options.grid(row=0, column=2, padx=10, pady=10, sticky='nesw')
 
-# Container widget where the user can select the parameters necessary for the AI analysis
+
+# Container widget where the user can select the parameters necessary for the ML analysis
 preparation_parameters = ttk.LabelFrame(master=choose_feature_file_frame, text='Select data preparation parameters', style="Custom.TLabelframe")
-# preparation_parameters.grid(row=2, column=0, padx=10, pady=10, sticky='nesw')
-preparation_parameters.pack()
+preparation_parameters.grid(row=1, column=1, padx=10, pady=(12, 5), sticky='new')
+preparation_parameters.grid_remove() # Instantly hide parameter options
 
 # Entry for the amount of wells in the dataset 
 well_amount_label = ttk.Label(master=preparation_parameters, text="Well amount")
@@ -1919,7 +1980,7 @@ well_amount_label.grid(row=0, column=0, padx=10, pady=10, sticky='nesw')
 # TODO: Add Tooltip
 well_amount_input = ttk.Entry(master=preparation_parameters)
 well_amount_input.grid(row=0, column=1, padx=10, pady=10, sticky='nesw')
-well_amount_input.insert(0, 12) # Add default parameter
+well_amount_input.insert(0, 12) # Add default parameter value (index, value)
 
 # Entry for the amount of electrodes in each well 
 electrode_amount_label = ttk.Label(master=preparation_parameters, text="Electrode amount")
@@ -1927,7 +1988,7 @@ electrode_amount_label.grid(row=1, column=0, padx=10, pady=10, sticky='nesw')
 # TODO: Add Tooltip
 electrode_amount_input = ttk.Entry(master=preparation_parameters)
 electrode_amount_input.grid(row=1, column=1, padx=10, pady=10, sticky='nesw')
-electrode_amount_input.insert(0, 12)
+electrode_amount_input.insert(0, 12) # Add default parameter value (index, value)
 
 # Split dataset 
 # To be deleted later
@@ -1938,32 +1999,25 @@ data_magnification_label.bind("<Enter>", data_magnification_tooltip.show_tooltip
 data_magnification_label.bind("<Leave>", data_magnification_tooltip.hide_tooltip)
 data_magnification_input = ttk.Entry(master=preparation_parameters)
 data_magnification_input.grid(row=2, column=1, padx=10, pady=10, sticky='nesw')
-data_magnification_input.insert(0, 30)
+data_magnification_input.insert(0, 30) # Add default parameter value (index, value)
 
 # Button to label all wells in the data
 go_to_label_frame_button = ttk.Button(master=choose_feature_file_frame, text="Label data", style="bigbutton.TButton", command=lambda: go_to_label_frame()) 
-go_to_label_frame_button.grid(row=4, column=0, padx=10, pady=(30, 10), ipadx=20, ipady=18, sticky='nesw')
+go_to_label_frame_button.grid(row=2, column=1, padx=10, pady=(15, 10), ipadx=20, ipady=15, sticky='new')
 
 
-# Container widget to navigate back through the GUI
-go_back_buttons = tk.LabelFrame(master=choose_feature_file_frame, bd=0) # bd=0 Removes border of container widget
-go_back_buttons.grid(row=0, column=1, padx=(40, 10), pady=(26, 10), sticky='nesw')
+''' Sidebar '''
+# Sidebar container widget where the user can navigate fast through the ML pipeline
+navigation_menu_1 = ttk.LabelFrame(master=choose_feature_file_frame, text='Navigation', style="Custom.TLabelframe")
+navigation_menu_1.grid(row=0, column=0, rowspan=100, padx=(10, 30), pady=10, sticky='new')
 
-# Button to go to the main frame window
-main_frame_button = ttk.Button(master=go_back_buttons, text="Go to the main menu", command=lambda: go_to_main_frame())
-main_frame_button.grid(row=0, column=1, pady=(0, 15), sticky='new')
+# Dynamic navigation menu
+dynamic_navigation_menu(master=navigation_menu_1)
 
-# Button to show / hide parameter options
-parameter_options = ttk.Button(master=go_back_buttons, text="Parameter options", command=lambda: show_parameter_options())
-parameter_options.grid(row=1, column=1, sticky='new')
+# # Container widget to navigate back through the GUI
+# go_back_buttons = tk.LabelFrame(master=choose_feature_file_frame, bd=0) # bd=0 Removes border of container widget
+# go_back_buttons.grid(row=101, column=1, padx=(40, 10), pady=(26, 10), sticky='nesw')
 
-
-# Show or hide parameter options for the data preperation part
-def show_parameter_options():
-    preparation_parameters.pack_forget()
-    well_amount_label.pack_forget()
-    electrode_amount_label.pack_forget()
-    data_magnification_label.pack_forget()
 
 '''
 Back-end - Functions for all buttons in the choose feature file frame
@@ -1977,7 +2031,7 @@ raw_df = pd.DataFrame()
 is_model_trained = False
 
 
-# Set up the window frame where the user can analyse the data with AI scripts
+# Set up the window frame where the user can analyse the data with ML scripts
 def go_to_choose_feature_file_frame():
     # Forget all ML analysis packs
     forget_packs()
@@ -1988,8 +2042,8 @@ def forget_packs():
     choose_feature_file_frame.pack_forget()
     feature_selection_frame.pack_forget()
     model_selection_frame.pack_forget()
-    preparation_frame.pack_forget()
-    ai_results_frame.pack_forget()
+    train_model_frame.pack_forget()
+    ml_results_frame.pack_forget()
     label_frame.pack_forget()
     main_frame.pack_forget()
 
@@ -2035,11 +2089,28 @@ def load_feature_data():
             messagebox.showwarning(title="Error  (How did you even do this?)", message=f"The following file does not exist on your computer: {feature_filename}")
             return None
 
+
+# Show or hide parameter options for the data preperation part
+def show_parameter_options(parameters):
+    # Check if parameter options are hidden
+    if parameters.grid_info() == {}:
+        # Show parameter options
+        parameters.grid() 
+    else:
+        # Hide parameter options
+        parameters.grid_remove() 
+
+
 # Set up the window where the user can label all wells
 def go_to_label_frame():
+    global navigation_index
+    # Check if navigation button is pressed to early
+    if navigation_index < 1:
+        messagebox.showinfo(title="Not available yet", message="This option is not available yet. Please continue the Machine Learning process to the right of this navigation panel.")
+        return
     # Check if model can be trained
     if raw_df.empty:
-        messagebox.showinfo(title="Load a MEA features file", message="Please select a MEA features .csv file first, before training the model.")
+        messagebox.showinfo(title="Load MEA features file", message="Please select a MEA features .csv file in order to continue the Machine Learning analysis.")
         return
     
     # Define global variables for all data preparation parameters
@@ -2055,7 +2126,7 @@ def go_to_label_frame():
         
     # Check if all parameters have a correct datatype value
     except Exception as error:
-        messagebox.showinfo(title='Please check your data preparation parameters', message='Certain parameters could not be converted to the correct datatype (e.g. int or float). Please check if every parameter has the correct values')
+        messagebox.showinfo(title='Please check your preparation parameters', message='Certain parameters could not be converted to the correct datatype (e.g. int or float). Please check if every parameter has the correct values')
         return
 
     # Check if the entered well amount is correct
@@ -2066,6 +2137,12 @@ def go_to_label_frame():
     # Create all well buttons in a lay-out corresponding to the physical MEA plate
     global well_buttons
     well_buttons = create_well_buttons_label_frame(well_layout, well_amount, assign_label_to_well)
+
+    # Make inactive navigation button active
+    ttk.Style().configure("Label_style.TButton", foreground='#FFFFFF')
+    # Increase navigation index to 2 to make label data available
+    if navigation_index < 2:
+        navigation_index = 2
 
     # Forget all ML analysis packs
     forget_packs()
@@ -2081,13 +2158,13 @@ label_frame = ttk.Frame(root)
 
 # Layout with all well buttons
 well_layout = ttk.LabelFrame(master=label_frame, text='Assign labels to wells', style="Custom.TLabelframe")
-well_layout.grid(column=0, row=0, sticky='nw', padx=20, pady=10)
+well_layout.grid(row=0, column=1, sticky='nw', padx=20, pady=10)
 
 
 '''Frames to assign labels to the wells'''
 # Frame for all buttons
 button_frame = ttk.Frame(master=label_frame)
-button_frame.grid(row=1, column=0, sticky="ew", pady=5, padx=(5, 0))
+button_frame.grid(row=1, column=1, sticky="ew", pady=5, padx=(5, 0))
 
 # Clear button
 clear_button = ttk.Button(button_frame, text="Clear all assigned labels", command=lambda: clear_selection())
@@ -2103,32 +2180,28 @@ add_group_button.grid(row=0, column=1, sticky="w", padx=5)
 
 # Enter the labels to assign to the groups
 add_group_entry = ttk.Entry(group_manager_frame)
-add_group_entry.grid(row=0, column=2, sticky="w", padx=(0, 0))
+add_group_entry.grid(row=0, column=2, sticky="w", padx=(0, 10))
 
 # Style to color the buttons with the tag
 style = ttk.Style()
 
 # Frame for groups
 group_frame = ttk.Frame(master=label_frame)
-group_frame.grid(row=2, column=0, sticky="ew")
+group_frame.grid(row=2, column=1, sticky="ew")
 
 
 '''Navigate through the GUI'''
 # Button to preprocess the dataset in order to give it to a ML model
-preprocess_data_button = ttk.Button(master=label_frame, text="Default preprocessing", style="bigbutton.TButton", command=lambda: preprocess_data()) 
-preprocess_data_button.grid(row=3, column=0, padx=(10, 0), pady=(25, 10), ipadx=20, ipady=20, sticky='nesw')
+preprocess_data_button = ttk.Button(master=label_frame, text="Preprocess data", style="bigbutton.TButton", command=lambda: preprocess_data()) 
+preprocess_data_button.grid(row=3, column=1, padx=10, pady=(25, 10), ipadx=20, ipady=15, sticky='nesw')
 
-# Container widget to navigate back through the GUI
-go_back_buttons = tk.LabelFrame(master=label_frame, bd=0) # bd=0 Removes border of container widget
-go_back_buttons.grid(row=0, column=1, padx=(40, 10), pady=(26, 10), sticky='nesw')
+''' Sidebar '''
+# Sidebar container widget where the user can navigate fast through the ML pipeline
+navigation_menu_2 = ttk.LabelFrame(master=label_frame, text='Navigation', style="Custom.TLabelframe")
+navigation_menu_2.grid(row=0, column=0, rowspan=100, padx=(10, 30), pady=10, sticky='new')
 
-# Button to go back to the choose feature file frame window
-back_to_choose_feature_file_frame_button = ttk.Button(master=go_back_buttons, text="Previous window", command=lambda: go_to_choose_feature_file_frame())
-back_to_choose_feature_file_frame_button.grid(row=0, column=0, pady=(0, 15), sticky='new')
-
-# Button to go to the main frame window
-main_frame_button_3 = ttk.Button(master=go_back_buttons, text="Main menu", command=lambda: go_to_main_frame())
-main_frame_button_3.grid(row=1, column=0, sticky='new')
+# Dynamic navigation menu
+dynamic_navigation_menu(master=navigation_menu_2)
 
 
 '''
@@ -2249,7 +2322,7 @@ def add_group():
     update_label_buttons()
 
 
-# Set up the window where the user can select the AI parameters and train an AI model
+# Set up the window where the user can select the ML parameters and train a ML model
 def preprocess_data():
     # Get all well ID's
     global label_well_dictionary
@@ -2276,11 +2349,29 @@ def preprocess_data():
 
     # Button to go to ML model selection frame
     go_to_choose_model_frame_button = ttk.Button(master=label_frame, text="Choose ML model", style="bigbutton.TButton", command=lambda: go_to_choose_model_frame())
-    go_to_choose_model_frame_button.grid(row=4, column=0, padx=(10, 0), pady=(5, 10), ipadx=20, ipady=20, sticky="nesw")
+    go_to_choose_model_frame_button.grid(row=4, column=1, padx=10, pady=(5, 10), ipadx=20, ipady=15, sticky="nesw")
+
+    # Allow to navigate to 'Choose model frame' via Navigation menu
+    global navigation_index
+    if navigation_index < 2.1:
+        navigation_index = 2.1
+
     
 
 # Set up the window where the user can choose a ML model
 def go_to_choose_model_frame():
+    global navigation_index
+    # Check if navigation button is pressed to early
+    if navigation_index < 2.1:
+        messagebox.showinfo(title="Not available yet", message="This option is not available yet. Please continue the Machine Learning process to the right of this navigation panel.")
+        return
+    
+    # Make inactive (grey) navigation button active (white)
+    ttk.Style().configure("Choose_model_style.TButton", foreground='#FFFFFF')
+    # Increase navigation index to 3 to make Choose ML model available
+    if navigation_index < 3:
+        navigation_index = 3
+
     # Forget all ML analysis packs
     forget_packs()
     # Go to model selection frame
@@ -2288,14 +2379,14 @@ def go_to_choose_model_frame():
 
 
 '''
-Front-end lay-out of the data preparation frame
+Front-end lay-out of the train model frame
 '''
 # Model selection frame - Rectangular window which is used to organize a group of complex widgets
 model_selection_frame = ttk.Frame(root)
 
 # Container widget where the user can select the ML model that he wants to train
 select_ml_model = ttk.LabelFrame(master=model_selection_frame, text='Select Machine Learning model', style="Custom.TLabelframe")
-select_ml_model.grid(row=0, column=0, padx=10, pady=10, sticky='nesw')
+select_ml_model.grid(row=0, column=1, padx=10, pady=10, sticky='nesw')
 
 # Button to select the Random Forest Classifier
 select_rfc = ttk.Button(master=select_ml_model, text="Random Forest Classifier (RFC)", style="wellbutton.TButton", command=lambda: select_rfc_model())
@@ -2305,31 +2396,28 @@ select_rfc.grid(row=0, column=0, padx=10, pady=(25, 5), ipadx=10, ipady=10, stic
 select_gbc = ttk.Button(master=select_ml_model, text="Gradient Boosting Classifier (GBC)", style="wellbutton.TButton", command=lambda: select_gbc_model())
 select_gbc.grid(row=1, column=0, padx=10, pady=10, ipadx=10, ipady=10, sticky='nesw')
 
+''' Sidebar '''
+# Sidebar container widget where the user can navigate fast through the ML pipeline
+navigation_menu_3 = ttk.LabelFrame(master=model_selection_frame, text='Navigation', style="Custom.TLabelframe")
+navigation_menu_3.grid(row=0, column=0, rowspan=100, padx=(10, 30), pady=10, sticky='new')
 
-# Container widget to navigate back through the GUI
-go_back_buttons_choose_model = tk.LabelFrame(master=model_selection_frame, bd=0) # bd=0 Removes border of container widget
-go_back_buttons_choose_model.grid(row=0, column=1, padx=(40, 10), pady=(26, 10), sticky='nesw')
-
-# Button to go back to the label frame window
-back_to_label_frame_button = ttk.Button(master=go_back_buttons_choose_model, text="Previous window", command=lambda: go_to_label_frame())
-back_to_label_frame_button.grid(row=0, column=0, pady=(0, 15), sticky='new')
-
-# Button to go to the main frame window
-main_frame_button_4 = ttk.Button(master=go_back_buttons_choose_model, text="Main menu", command=lambda: go_to_main_frame())
-main_frame_button_4.grid(row=1, column=0, sticky='new')
-
+# Dynamic navigation menu
+dynamic_navigation_menu(master=navigation_menu_3)
 
 '''
 Back-end - Functions to label the dataset
 '''
+import sklearn
+global ml_model
+ml_model = None
 # Select the Random Forest Classifier as the global ML model
 def select_rfc_model():
     from sklearn.ensemble import RandomForestClassifier
     global ml_model
     ml_model = RandomForestClassifier()
 
-    # Go to the preparation frame
-    go_to_preparation_frame()
+    # Go to the train model frame
+    go_to_train_model_frame()
 
 # Select the Gradient Boosting Classifier as the global ML model
 def select_gbc_model():
@@ -2337,92 +2425,113 @@ def select_gbc_model():
     global ml_model
     ml_model = GradientBoostingClassifier()
 
-    # Go to the preparation frame
-    go_to_preparation_frame()
+    # Go to the train model frame
+    go_to_train_model_frame()
 
-# Set up the window where the user can select the AI parameters and train an AI model
-def go_to_preparation_frame():
+# Set up the window where the user can select the ML parameters and train a ML model
+def go_to_train_model_frame():
+    global navigation_index
+    # Check if navigation button is pressed to early
+    if navigation_index < 3:
+        messagebox.showinfo(title="Not available yet", message="This option is not available yet. Please continue the Machine Learning process to the right of this navigation panel.")
+        return
+    
+    global ml_model
+    # Check if ML model is selected
+    if ml_model == None:
+        messagebox.showinfo(title="Select model", message="Please select a Machine Learning model in order to continue the Machine Learning analysis.")
+        return
+    
+    # Make inactive (grey) navigation button active (white)
+    ttk.Style().configure("Train_model_style.TButton", foreground='#FFFFFF')
+    # Increase navigation index to 4 to make 'Train ML model' available
+    if navigation_index < 4:
+        navigation_index = 4
+
     # Forget all ML analysis packs
     forget_packs()
-    # Go to preparation frame
-    preparation_frame.pack(fill='both', expand=True)
+    # Go to train model frame
+    train_model_frame.pack(fill='both', expand=True)
 
 
 '''
-Front-end lay-out of the data preparation frame
+Front-end lay-out of the train model frame
 '''
-# Data preparation frame - Rectangular window which is used to organize a group of complex widgets
-preparation_frame = ttk.Frame(root)
+# train model frame - Rectangular window which is used to organize a group of complex widgets
+train_model_frame = ttk.Frame(root)
 
 # # Row and column count widget of prepared treeview
-# row_column_count_prepped_df_frame = ttk.Label(master=preparation_frame.interior, text="row x columns")
+# row_column_count_prepped_df_frame = ttk.Label(master=train_model_frame, text="row x columns")
 # row_column_count_prepped_df_frame.grid(row=1, column=0, padx=10, pady=10, sticky='nesw')
 
-''' AI parameters'''
+''' ML parameters'''
 
-# Container widget where the user can select the parameters necessary for the AI analysis
-select_ai_parameters = ttk.LabelFrame(master=preparation_frame, text='Select Machine Learning parameters', style="Custom.TLabelframe")
-select_ai_parameters.grid(row=0, column=0, padx=10, pady=10, sticky='nesw')
+# Container widget where the user can select the parameters necessary for the ML analysis
+select_ml_parameters = ttk.LabelFrame(master=train_model_frame, text='Select Machine Learning parameters', style="Custom.TLabelframe")
+select_ml_parameters.grid(row=0, column=1, padx=10, pady=(10, 20), sticky='nesw')
+select_ml_parameters.grid_remove() # Instantly hide parameter options
 
-# Entries for all AI parameters 
-# Entry for the train percentage for training the AI model
-train_percentage_label = ttk.Label(master=select_ai_parameters, text="Train percentage")
+# Entries for all ML parameters 
+# Entry for the train percentage for training the ML model
+train_percentage_label = ttk.Label(master=select_ml_parameters, text="Train percentage")
 train_percentage_label.grid(row=0, column=0, padx=10, pady=10, sticky='nesw')
-train_percentage_tooltip = Tooltip(train_percentage_label, 'Value of the train percentage should be between 1% and 99%\nThe default value for the train size is 70%')
+train_percentage_tooltip = Tooltip(train_percentage_label, 'Value of the train percentage should be between 0% and 100%\nThe default value for the train size is 70%')
 train_percentage_label.bind("<Enter>", train_percentage_tooltip.show_tooltip)
 train_percentage_label.bind("<Leave>", train_percentage_tooltip.hide_tooltip)
-train_percentage_input = ttk.Entry(master=select_ai_parameters)
+train_percentage_input = ttk.Entry(master=select_ml_parameters)
 train_percentage_input.grid(row=0, column=1, padx=10, pady=10, sticky='nesw')
+train_percentage_input.insert(0, 70) # Add default parameter value (index, value)
+
+# Entry for the correlation threshold for chosing the independent features
+correlation_threshold_label = ttk.Label(master=select_ml_parameters, text="Correlation threshold")
+correlation_threshold_label.grid(row=1, column=0, padx=10, pady=10, sticky='nesw')
+correlation_threshold_tooltip = Tooltip(correlation_threshold_label, 'Explanation to be written.')
+correlation_threshold_label.bind("<Enter>", correlation_threshold_tooltip.show_tooltip)
+correlation_threshold_label.bind("<Leave>", correlation_threshold_tooltip.hide_tooltip)
+correlation_threshold_input = ttk.Entry(master=select_ml_parameters)
+correlation_threshold_input.grid(row=1, column=1, padx=10, pady=10, sticky='nesw')
+correlation_threshold_input.insert(0, 0.90) # Add default parameter value (index, value)
 
 
-# Container widget to train the AI model and view the results
-train_model_navigation_buttons = ttk.LabelFrame(master=preparation_frame, text="Train Machine Learning model on", style="Custom.TLabelframe")
-train_model_navigation_buttons.grid(row=1, column=0, padx=10, pady=10, sticky='nesw')
+# Container widget to train the ML model and view the results
+train_model_navigation_buttons = ttk.LabelFrame(master=train_model_frame, text="Train Machine Learning model", style="Custom.TLabelframe")
+train_model_navigation_buttons.grid(row=1, column=1, padx=10, pady=10, sticky='nesw')
 
-# Button to train the AI model with the chosen features file and the chosen parameters
-train_model_all_features_button = ttk.Button(master=train_model_navigation_buttons, text="all features", style="wellbutton.TButton", command=lambda: train_model_check()) # TODO: Really train the AI model
-train_model_all_features_button.grid(row=0, column=0, padx=10, pady=10, ipadx=10, ipady=8, sticky='nesw')
+# Button to train the ML model with all features 
+train_model_all_features_button = ttk.Button(master=train_model_navigation_buttons, text="Train model on all features", style="wellbutton.TButton", command=lambda: train_model_check()) # TODO: Really train the ML model
+train_model_all_features_button.grid(row=0, column=0, padx=10, pady=(25, 10), ipadx=10, ipady=8, sticky='nesw')
 
-# Button to train the AI model with the chosen features file and the chosen parameters
-train_model_independent_features_button = ttk.Button(master=train_model_navigation_buttons, text="independent features", style="wellbutton.TButton", command=lambda: train_model_check()) # TODO: Really train the AI model
-train_model_independent_features_button.grid(row=1, column=0, padx=10, pady=2, ipadx=10, ipady=8, sticky='nesw')
+# Button to train the ML model with all independent features 
+train_model_independent_features_button = ttk.Button(master=train_model_navigation_buttons, text="Train model on independent features", style="wellbutton.TButton", command=lambda: train_model_check()) # TODO: Really train the ML model
+train_model_independent_features_button.grid(row=1, column=0, padx=10, pady=5, ipadx=50, ipady=8, sticky='nesw')
 
-# Button to train the AI model with the chosen features file and the chosen parameters
-train_model_user_defined_features_button = ttk.Button(master=train_model_navigation_buttons, text="user-defined features", style="wellbutton.TButton", command=lambda: go_to_feature_selection()) # TODO: Really train the AI model
+# Button to train the ML model with the chosen features 
+train_model_user_defined_features_button = ttk.Button(master=train_model_navigation_buttons, text="Train model on user-defined features", style="wellbutton.TButton", command=lambda: go_to_feature_selection()) # TODO: Really train the ML model
 train_model_user_defined_features_button.grid(row=2, column=0, padx=10, pady=10, ipadx=10, ipady=8, sticky='nesw')
 
-# # Button to view the results and all visualtion possibilities of the AI model
-# view_ai_results_button = ttk.Button(master=train_model_navigation_buttons, text="View results", style="wellbutton.TButton", command=lambda: go_to_ai_results_frame()) # TODO: Add AI results frame and go to this frame
-# view_ai_results_button.grid(row=3, column=1, padx=10, pady=10, ipadx=25, ipady=25, sticky='nesw')
-
-# # Button to compute a correlation matrix and select some features
-# cm_button = ttk.Button(master=train_model_navigation_buttons, text="Correlation matrix", style="wellbutton.TButton", command=lambda: go_to_feature_selection()) # TODO: Function to Build Your Own code
-# cm_button.grid(row=4, column=0, padx=10, pady=10, ipadx=25, ipady=25, sticky='nesw')
-
 # # Button to download the prepared and cleaned dataframe
-# download_df_button = ttk.Button(master=train_model_navigation_buttons, text="Download DataFrame", style="wellbutton.TButton", command=lambda: download_df()) # TODO: Really train the AI model
+# download_df_button = ttk.Button(master=train_model_navigation_buttons, text="Download DataFrame", style="wellbutton.TButton", command=lambda: download_df()) # TODO: Really train the ML model
 # download_df_button.grid(row=4, column=1, padx=10, pady=10, ipadx=25, ipady=25, sticky='nesw')
 
-# # Button to build your own script to analyse an AI model
+# # Button to build your own script to analyse an ML model
 # byo_button = ttk.Button(master=train_model_navigation_buttons, text="Write Your Own code!", style="bigbutton.TButton", command=lambda: write_your_own_code()) # TODO: Function to Build Your Own code
 # byo_button.grid(row=1, column=2, padx=10, pady=10, ipadx=25, ipady=25, sticky='nesw')
 
 # Container widget to navigate back through the GUI
-go_back_buttons_prep = tk.LabelFrame(master=preparation_frame, bd=0) # bd=0 Removes border of container widget
-go_back_buttons_prep.grid(row=0, column=1, padx=(40, 10), pady=(26, 10), sticky='nesw')
+go_back_buttons_prep = tk.LabelFrame(master=train_model_frame, bd=0) # bd=0 Removes border of container widget
+go_back_buttons_prep.grid(row=0, column=2, rowspan=2, padx=(40, 10), pady=(26, 10), sticky='nesw')
 
-# Button to go back to the label frame window
-back_to_model_selection_frame_button = ttk.Button(master=go_back_buttons_prep, text="Previous window", command=lambda: go_to_choose_model_frame())
-back_to_model_selection_frame_button.grid(row=0, column=0, pady=(0, 15), sticky='new')
+# Button to show / hide parameter options
+ml_parameter_options = ttk.Button(master=go_back_buttons_prep, text="Parameter options", command=lambda: show_parameter_options(select_ml_parameters))
+ml_parameter_options.grid(row=2, column=0, sticky='new')
 
-# Button to go to the main frame window
-main_frame_button_6 = ttk.Button(master=go_back_buttons_prep, text="Main menu", command=lambda: go_to_main_frame())
-main_frame_button_6.grid(row=1, column=0, sticky='new')
+''' Sidebar '''
+# Sidebar container widget where the user can navigate fast through the ML pipeline
+navigation_menu_4 = ttk.LabelFrame(master=train_model_frame, text='Navigation', style="Custom.TLabelframe")
+navigation_menu_4.grid(row=0, column=0, rowspan=100, padx=(10, 30), pady=10, sticky='new')
 
-# Button to go to the main frame window from the parameters frame
-main_frame_button_1 = ttk.Button(master=parameterframe.interior, text="Go back to the main menu and don't save parameters", command=lambda: go_to_main_frame())
-main_frame_button_1.grid(row=4, column=0, padx=10, pady=(0, 20), ipadx=25, ipady=25, sticky='nesw', columnspan=3)
-
+# Dynamic navigation menu
+dynamic_navigation_menu(master=navigation_menu_4)
 
 '''
 Back-end - Functions for the Machine Learning training process
@@ -2434,7 +2543,7 @@ prepped_df = pd.DataFrame
 delete_axis = 1
 
 # TODO: Function needs to be implemented in the CureQ library
-# Prepare the dataset before training an AI model
+# Prepare the dataset before training a ML model
 def data_preparation():
     global selected_x_train_set
     selected_x_train_set = [] # Reset array of selected columns with each update
@@ -2511,6 +2620,7 @@ def row_column_count_prepped_df():
 def train_model_check():
     # Define global variables for all data preparation parameters TODO
     global train_percentage
+    train_percentage = 0
     
     try:
         # Get all parameters to train the ML model
@@ -2526,11 +2636,11 @@ def train_model_check():
     # Check if all parameters have a correct datatype value
     except Exception as error:
         print(error)
-        messagebox.showinfo(title='Please check your ML preparation parameters', message='Certain parameters could not be converted to the correct datatype (e.g. int or float). Please check if every parameter has the correct values')
+        messagebox.showinfo(title='Please check your ML parameters', message='Certain parameters could not be converted to the correct datatype (e.g. int or float). Please check if every parameter has the correct values')
     if train_percentage <= 0 or train_percentage >= 100:
         return
 
-   # Allows to go to the AI results tab
+   # Allows to go to the ML results tab
     global is_model_trained
     is_model_trained = True
 
@@ -2538,11 +2648,11 @@ def train_model_check():
     train_model()
 
     # Go to the frame with all results
-    go_to_ai_results_frame()
+    go_to_ml_results_frame()
 
 
 # TODO: Function needs to be implemented in the CureQ library
-# AI analysis function from CureQ library which analyses the chosen features file.  # TODO: Really train the AI model
+# ML analysis function from CureQ library which analyses the chosen features file.  # TODO: Really train the ML model
 def train_model():
     # Declare variables as global in order to use it in other function
     global train_percentage
@@ -2573,23 +2683,10 @@ def train_model():
     # Test ML model and show accuracy
     accuracy = metrics.accuracy_score(y_test, y_pred)*100
     print("Accuracy of {}: {:.2f}% {}".format(ml_model, accuracy, type(ml_model)))
-    if ml_model == "RandomForestClassifier()":
+    if type(ml_model) == sklearn.ensemble._forest.RandomForestClassifier:
         messagebox.showinfo(title='RFC accuracy', message='Accuracy of Random Forest Classifier trained on chosen features: {:.2f}'.format(accuracy))
     else:
         messagebox.showinfo(title='GBC accuracy', message='Accuracy of Gradient Boosting Classifier trained on chosen features: {:.2f}'.format(accuracy))
-
-
-# Set up the window frame where the user can view all results of the trained AI model
-def go_to_ai_results_frame():
-    # Check whether a model is already trained
-    if is_model_trained == False:
-        messagebox.showinfo(title="Information", message="Please train a model first.")
-        return
-
-    # Forget all ML analysis packs
-    forget_packs()
-    # Go to results frame
-    ai_results_frame.pack(fill='both', expand=True) # .Pack places block of the AI results frame widget
 
 
 # Download the prepared and cleaned DataFrame
@@ -2618,15 +2715,28 @@ Front-end layout of the feature selection procedure
 '''
 # Feature_selection_frame - Rectangular window which is used to organize a group of complex widgets
 feature_selection_frame = VerticalScrolledFrame(root)
-   
 
-# Button to view the results and all visualtion possibilities of the AI model
-back_to_prep_frame_button = ttk.Button(master=feature_selection_frame.interior, text="Previous window", command=lambda: go_to_preparation_frame()) 
-back_to_prep_frame_button.grid(row=1, column=0, padx=20, pady=10, ipadx=25, ipady=25, sticky='nesw')
+
+# Container widget which contains all visualizations
+correlation_matrix = ttk.LabelFrame(feature_selection_frame.interior, text="Correlation matrix", style="Custom.TLabelframe")
+correlation_matrix.grid(row=0, column=0, padx=10, pady=10, sticky='nesw')
+
+# Add a scrollable instance frame inside the LabelFrame
+scrollable_correlation_matrix = VerticalScrolledFrame(correlation_matrix)
+scrollable_correlation_matrix.grid(row=0, column=0, padx=10, pady=10, sticky='nesw')
+
+
+# Container widget to navigate back through the GUI
+go_back_buttons_cm = tk.LabelFrame(master=feature_selection_frame.interior, bd=0) # bd=0 Removes border of container widget
+go_back_buttons_cm.grid(row=0, column=1, padx=(40, 10), pady=(26, 10), sticky='nesw')
+
+# Button to view the results and all visualtion possibilities of the ML model
+back_to_prep_frame_button = ttk.Button(master=go_back_buttons_cm, text="Previous window", command=lambda: go_to_train_model_frame()) 
+back_to_prep_frame_button.grid(row=1, column=0, pady=(0, 15), sticky='nesw')
 
 # Button to go to the main frame window from the parameters frame
-main_frame_button_5 = ttk.Button(master=feature_selection_frame.interior, text="Go to the main menu", command=lambda: go_to_main_frame())
-main_frame_button_5.grid(row=2, column=0, padx=20, pady=10, ipadx=25, ipady=25, sticky='nesw')
+main_frame_button_5 = ttk.Button(master=go_back_buttons_cm, text="Main menu", command=lambda: go_to_main_frame())
+main_frame_button_5.grid(row=2, column=0, sticky='nesw')
 
 
 '''
@@ -2637,40 +2747,13 @@ def go_to_feature_selection():
     # Forget all ML analysis packs
     forget_packs()
     # Go to feature selection frame
-    feature_selection_frame.pack(fill='both', expand=True) # .Pack places block of the AI results frame widget
+    feature_selection_frame.pack(fill='both', expand=True)
 
     # Embed correlation matrix in GUI
-    embed_correlation_matrix()
+    embed_correlation_matrix(master=scrollable_correlation_matrix.interior)
 
     # Select all columns for the X train set 
     select_features()
-
-
-# Embed a correlation matrix in GUI
-def embed_correlation_matrix():
-    # Declare variables as global in order to use it in other function
-    global X
-
-    # Check whether a model is already trained
-    if is_model_trained == False:
-        # Drop all non-feature columns
-        X = prepped_df.drop(["Well", "Label", "Active_electrodes", "Index"], axis=1) # Extracted features
-    
-    # Round all correlation values on 2 decimals
-    correlation_df = round(X.corr(), 2)
-
-    # Figure that will contain the correlation matrix
-    correlation_figure = Figure(figsize=(10, 8))
-    correlation_subplot = correlation_figure.add_subplot(1, 1, 1)  # Add subplot (nrows, ncols, index)
-    # Seaborn heatmap for visualizing the correlation matrix of all features
-    correlation_matrix = sns.heatmap(correlation_df, vmin=-1, vmax=1, center=0, cmap=sns.diverging_palette(50, 500, n=500), square=True, ax=correlation_subplot) # Add heatmap to Matplotlib axes
-    correlation_matrix.set_title("Correlation matrix of all MEA features") # Set title of subplot figure
-    correlation_matrix.figure.tight_layout() # Show all feature columns
-
-    # Creating the TKinter canvas containing the correlation matrix
-    correlation_canvas = FigureCanvasTkAgg(correlation_figure, master=feature_selection_frame.interior)
-    correlation_canvas.draw()  # Draw the correlation matrix
-    correlation_canvas.get_tk_widget().grid(row=0, column=0, padx=10, pady=10)  # Place the canvas on the Tkinter window
 
 
 # Create buttons to select all features for the X train set
@@ -2697,15 +2780,15 @@ def toggle_column_selection(selected_column):
 
 
 '''
-Front-end lay-out of the AI results frame
+Front-end lay-out of the ML results frame
 '''
 # Results frame - Rectangular window which is used to organize a group of complex widgets
-ai_results_frame = ttk.Frame(root)
+ml_results_frame = ttk.Frame(root)
 
-
-# Container widget where the user can view the results of the just trained AI model
-visualization_options = ttk.LabelFrame(master=ai_results_frame, text='Visualization options', style="Custom.TLabelframe")
-visualization_options.grid(row=0, column=0, padx=10, pady=10, sticky='nesw')
+''' Visualization options '''
+# Container widget where the user can view the results of the just trained ML model
+visualization_options = ttk.LabelFrame(master=ml_results_frame, text='ML results', style="Custom.TLabelframe")
+visualization_options.grid(row=0, column=1, padx=10, pady=10, sticky='new')
 
 # Button to show a bar plot which shows the feature importance of each feature
 feature_importance_button = ttk.Button(master=visualization_options, text="Feature Importances", command=lambda: feature_importances())
@@ -2726,20 +2809,60 @@ acc_button.grid(row=3, column=0, padx=10, pady=10, sticky='nesw')
 # Button to show the correlation matrix of all MEA features
 corr_button = ttk.Button(master=visualization_options, text="Correlation Matrix", command=lambda: get_correlation_matrix())
 corr_button.grid(row=4, column=0, padx=10, pady=10, sticky='nesw')
-   
 
-# Button to go to the main frame window from the parameters frame
-main_frame_button_2 = ttk.Button(master=ai_results_frame, text="Go to the main menu", command=lambda: go_to_main_frame())
-main_frame_button_2.grid(row=1, column=0, padx=10, pady=(0, 20), ipadx=25, ipady=25, sticky='nesw')
+''' ML results '''
+# Container widget which contains all visualizations
+visualization_frame = ttk.LabelFrame(ml_results_frame, text="Machine Learning results", style="Custom.TLabelframe")
+visualization_frame.grid(row=0, column=2, padx=10, pady=10, sticky='nesw')
 
-# Button to view the results and all visualtion possibilities of the AI model
-back_to_preparation_frame_button = ttk.Button(master=ai_results_frame, text="Previous window", command=lambda: go_to_preparation_frame()) 
-back_to_preparation_frame_button.grid(row=2, column=0, padx=10, pady=10, ipadx=25, ipady=25, sticky='nesw')
+# Add a scrollable instance frame inside the LabelFrame
+scrollable_visualization_frame = VerticalScrolledFrame(visualization_frame)
+scrollable_visualization_frame.grid(row=0, column=0, padx=10, pady=10, sticky='nesw')
 
+''' Sidebar '''
+# Sidebar container widget where the user can navigate fast through the ML pipeline
+navigation_menu_5 = ttk.LabelFrame(master=ml_results_frame, text='Navigation', style="Custom.TLabelframe")
+navigation_menu_5.grid(row=0, column=0, rowspan=100, padx=10, pady=10, sticky='new')
+
+# Dynamic navigation menu
+dynamic_navigation_menu(master=navigation_menu_5)
 
 '''
-Back-end - Functions for all AI results
+Back-end - Functions for all ML results
 '''
+# Set up the window frame where the user can view all results of the trained ML model
+def go_to_ml_results_frame():
+    global navigation_index
+    # Check if navigation button is pressed to early
+    if navigation_index < 4:
+        messagebox.showinfo(title="Not available yet", message="This option is not available yet. Please continue the Machine Learning process to the right of this navigation panel.")
+        return
+
+    # Check whether a model is already trained
+    if is_model_trained == False:
+        messagebox.showinfo(title="Train model", message="Please select an option to train the Machine Learning model in order to continue the Machine Learning analysis.")
+        return
+
+    # Only calculate feature importances if the ML model has decision trees
+    if type(ml_model) == sklearn.ensemble._forest.RandomForestClassifier:
+        # Embed features importances in results part
+        embed_feature_importances(master=scrollable_visualization_frame.interior)
+
+    # Embed correlation matrix in results part
+    embed_correlation_matrix(master=scrollable_visualization_frame.interior)
+    
+    # Make inactive (grey) navigation button active (white)
+    ttk.Style().configure("Model_results_style.TButton", foreground='#FFFFFF')
+    # Increase navigation index to 5 to make 'ML results' available
+    if navigation_index < 5:
+        navigation_index = 5
+
+    # Forget all ML analysis packs
+    forget_packs()
+    # Go to results frame
+    ml_results_frame.pack(fill='both', expand=True) # .Pack places block of the ML results frame widget
+
+
 # Function to write your own Python analysis script
 def feature_importances():
     # Calculate feature importances
@@ -2759,6 +2882,68 @@ def feature_importances():
     fig.tight_layout()
     plt.show()
 
+
+# Embed feature importances in GUI
+def embed_feature_importances(master):
+    # Calculate feature importances
+    feature_importance = ml_model.feature_importances_
+    # Calculate Standard deviation
+    std = np.std([tree.feature_importances_ for tree in ml_model.estimators_], axis=0)
+    # Get feature names
+    feature_names = X.columns
+    # Get all features and their importances in a nice overview
+    forest_importances = pd.Series(feature_importance, index=feature_names)
+
+    # Figure that will contain the Feature importances
+    importancy_figure = Figure(figsize=(10, 7))
+    importancy_subplot = importancy_figure.add_subplot(1, 1, 1)  # Add subplot (nrows, ncols, index)
+    # Plot forest importances
+    forest_importances.plot.bar(yerr=std, ax=importancy_subplot) # Add forest importances to Matplotlib axes
+    importancy_subplot.set_title("Feature importances using MDI") # Mean Decrease in Impurity
+    importancy_subplot.set_ylabel("Mean Decrease in Impurity")
+    importancy_figure.tight_layout() # Show all feature columns
+
+    # Creating the TKinter canvas containing the feature importancies
+    plot_canvas = FigureCanvasTkAgg(importancy_figure, master=master)  
+    plot_canvas.get_tk_widget().grid(row=0, column=0, padx=10, pady=10, sticky='nsew') # Place the canvas on the Tkinter window
+    # Add Matplotlib navigation toolbar
+    toolbar_frame = ttk.Frame(master=master)
+    toolbar_frame.grid(row=1, column=0, sticky='s')
+    toolbar = NavigationToolbar2Tk(plot_canvas, toolbar_frame)
+    toolbar.update()
+    plot_canvas.draw() # Draw the feature importancies on the canvas
+
+
+# Embed correlation matrix in GUI
+def embed_correlation_matrix(master):
+    # Declare variables as global in order to use it in other function
+    global X
+
+    # Check whether a model is not trained yet
+    if is_model_trained == False:
+        # Drop all non-feature columns
+        X = prepped_df.drop(["Well", "Label", "Active_electrodes", "Index"], axis=1) # Extracted features
+    
+    # Round all correlation values on 2 decimals
+    correlation_df = round(X.corr(), 2)
+
+    # Figure that will contain the correlation matrix
+    correlation_figure = Figure(figsize=(10, 8))
+    correlation_subplot = correlation_figure.add_subplot(1, 1, 1)  # Add subplot (nrows, ncols, index)
+    # Seaborn heatmap for visualizing the correlation matrix of all features
+    correlation_matrix = sns.heatmap(correlation_df, vmin=-1, vmax=1, center=0, cmap=sns.diverging_palette(50, 500, n=500), square=True, ax=correlation_subplot) # Add heatmap to Matplotlib axes
+    correlation_matrix.set_title("Correlation matrix of all MEA features") # Set title of subplot figure
+    correlation_figure.tight_layout() # Show all feature columns
+
+    # Creating the TKinter canvas containing the correlation matrix
+    plot_canvas = FigureCanvasTkAgg(correlation_figure, master=master)  
+    plot_canvas.get_tk_widget().grid(row=2, column=0, padx=10, pady=10, sticky='nsew') # Place the canvas on the Tkinter window
+    # Add Matplotlib navigation toolbar
+    toolbar_frame = ttk.Frame(master=master)
+    toolbar_frame.grid(row=3, column=0, sticky='s')
+    toolbar = NavigationToolbar2Tk(plot_canvas, toolbar_frame)
+    toolbar.update()
+    plot_canvas.draw() # Draw the correlation matrix on the canvas
 
 # Compute a correlation matrix and select features
 def get_correlation_matrix():
@@ -2789,35 +2974,7 @@ def performance_metrics():
 
 
 '''
-Back-end - AI Code for the data preparation  for in the CureQ library!
-'''
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
-
-
-
-
-# # Load the specified feature file in a DataFrame
-# def load_df():
-#     df = 
-
-
-# # Shows a bar plot with the amount of network bursts per well
-# def get_network_bursts():
-# # Shows a confusion matrix between with the disease/control ratio
-# def get_cm():
-# # Shows a bar plot which shows the feature importance of each feature
-# def get_feature_importance():
-# # Shows the DataFrame in a specified format
-# def get_df():
-# # Shows a bar plot which shows the accuracy score of each feature
-# def get acc():
-# # Shows the correlation matrix of all MEA features
-# def get_corr()
-# Button with Write your own code!
-
-'''
+End of ML analysis
 '''
 
 # Destroy GUI
