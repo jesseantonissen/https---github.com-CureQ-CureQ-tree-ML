@@ -15,6 +15,8 @@ import threading
 import time
 from functools import partial
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk) 
+from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.colors import ListedColormap
 import json
 import copy
 import pandas as pd
@@ -1917,6 +1919,7 @@ def dynamic_navigation_menu(master):
     inactive_color = "#AAAFB4"
     style = ttk.Style()
     # Create inactive buttons for buttons that can not be pressed yet
+    style.configure("Select_file_style.TButton", foreground="#FFFFFF")
     style.configure("Label_style.TButton", foreground=inactive_color)
     style.configure("Choose_model_style.TButton", foreground=inactive_color)
     style.configure("Train_model_style.TButton", foreground=inactive_color)
@@ -1929,7 +1932,7 @@ def dynamic_navigation_menu(master):
     menu_main_frame.grid(row=0, column=0, padx=10, pady=(10, 12), sticky='new')
 
     # Button to navigate to feature file selection frame
-    menu_select_file = ttk.Button(master=master, text="1. Select file", command=lambda: go_to_choose_feature_file_frame())
+    menu_select_file = ttk.Button(master=master, text="1. Select file", style="Select_file_style.TButton", command=lambda: go_to_choose_feature_file_frame())
     menu_select_file.grid(row=1, column=0, padx=10, pady=(0, 12), sticky='nesw')
 
     # Button to navigate to data labelling frame
@@ -2138,11 +2141,13 @@ def go_to_label_frame():
     global well_buttons
     well_buttons = create_well_buttons_label_frame(well_layout, well_amount, assign_label_to_well)
 
-    # Make inactive navigation button active
-    ttk.Style().configure("Label_style.TButton", foreground='#FFFFFF')
+    # Show incompleted active button (white) is now completed (limegreen)
+    ttk.Style().configure("Select_file_style.TButton", foreground='#32cd32')
     # Increase navigation index to 2 to make label data available
     if navigation_index < 2:
         navigation_index = 2
+        # Make inactive (grey) navigation button active (white)
+        ttk.Style().configure("Label_style.TButton", foreground='#FFFFFF')
 
     # Forget all ML analysis packs
     forget_packs()
@@ -2366,11 +2371,13 @@ def go_to_choose_model_frame():
         messagebox.showinfo(title="Not available yet", message="This option is not available yet. Please continue the Machine Learning process to the right of this navigation panel.")
         return
     
-    # Make inactive (grey) navigation button active (white)
-    ttk.Style().configure("Choose_model_style.TButton", foreground='#FFFFFF')
+    # Show incompleted active button (white) is now completed (limegreen)
+    ttk.Style().configure("Label_style.TButton", foreground='#32cd32')
     # Increase navigation index to 3 to make Choose ML model available
     if navigation_index < 3:
         navigation_index = 3
+        # Make inactive (grey) navigation button active (white)
+        ttk.Style().configure("Choose_model_style.TButton", foreground='#FFFFFF')
 
     # Forget all ML analysis packs
     forget_packs()
@@ -2442,11 +2449,13 @@ def go_to_train_model_frame():
         messagebox.showinfo(title="Select model", message="Please select a Machine Learning model in order to continue the Machine Learning analysis.")
         return
     
-    # Make inactive (grey) navigation button active (white)
-    ttk.Style().configure("Train_model_style.TButton", foreground='#FFFFFF')
+    # Show incompleted active button (white) is now completed (limegreen)
+    ttk.Style().configure("Choose_model_style.TButton", foreground='#32cd32')
     # Increase navigation index to 4 to make 'Train ML model' available
     if navigation_index < 4:
         navigation_index = 4
+        # Make inactive (grey) navigation button active (white)
+        ttk.Style().configure("Train_model_style.TButton", foreground='#FFFFFF')
 
     # Forget all ML analysis packs
     forget_packs()
@@ -2785,30 +2794,30 @@ Front-end lay-out of the ML results frame
 # Results frame - Rectangular window which is used to organize a group of complex widgets
 ml_results_frame = ttk.Frame(root)
 
-''' Visualization options '''
-# Container widget where the user can view the results of the just trained ML model
-visualization_options = ttk.LabelFrame(master=ml_results_frame, text='ML results', style="Custom.TLabelframe")
-visualization_options.grid(row=0, column=1, padx=10, pady=10, sticky='new')
+# ''' Visualization options '''
+# # Container widget where the user can view the results of the just trained ML model
+# visualization_options = ttk.LabelFrame(master=ml_results_frame, text='ML results', style="Custom.TLabelframe")
+# visualization_options.grid(row=0, column=1, padx=10, pady=10, sticky='new')
 
-# Button to show a bar plot which shows the feature importance of each feature
-feature_importance_button = ttk.Button(master=visualization_options, text="Feature Importances", command=lambda: feature_importances())
-feature_importance_button.grid(row=0, column=0, padx=10, pady=10, sticky='nesw')
+# # Button to show a bar plot which shows the feature importance of each feature
+# feature_importance_button = ttk.Button(master=visualization_options, text="Feature Importances", command=lambda: feature_importances())
+# feature_importance_button.grid(row=0, column=0, padx=10, pady=10, sticky='nesw')
 
-# Button to show a confusion matrix between with the disease/control ratio
-cm_button = ttk.Button(master=visualization_options, text="Confusion Matrix", command=lambda: confusion_matrices())
-cm_button.grid(row=1, column=0, padx=10, pady=10, sticky='nesw')
+# # Button to show a confusion matrix between with the disease/control ratio
+# cm_button = ttk.Button(master=visualization_options, text="Confusion Matrix", command=lambda: confusion_matrices())
+# cm_button.grid(row=1, column=0, padx=10, pady=10, sticky='nesw')
 
-# Button to show a bar plot with the amount of network bursts per well
-network_bursts_button = ttk.Button(master=visualization_options, text="Network Bursts", command=lambda: network_bursts())
-network_bursts_button.grid(row=2, column=0, padx=10, pady=10, sticky='nesw')
+# # Button to show a bar plot with the amount of network bursts per well
+# network_bursts_button = ttk.Button(master=visualization_options, text="Network Bursts", command=lambda: network_bursts())
+# network_bursts_button.grid(row=2, column=0, padx=10, pady=10, sticky='nesw')
 
-# Button to show a bar plot which shows the accuracy score of each feature
-acc_button = ttk.Button(master=visualization_options, text="Performance metrics", command=lambda: performance_metrics())
-acc_button.grid(row=3, column=0, padx=10, pady=10, sticky='nesw')
+# # Button to show a bar plot which shows the accuracy score of each feature
+# acc_button = ttk.Button(master=visualization_options, text="Performance metrics", command=lambda: performance_metrics())
+# acc_button.grid(row=3, column=0, padx=10, pady=10, sticky='nesw')
 
-# Button to show the correlation matrix of all MEA features
-corr_button = ttk.Button(master=visualization_options, text="Correlation Matrix", command=lambda: get_correlation_matrix())
-corr_button.grid(row=4, column=0, padx=10, pady=10, sticky='nesw')
+# # Button to show the correlation matrix of all MEA features
+# corr_button = ttk.Button(master=visualization_options, text="Correlation Matrix", command=lambda: get_correlation_matrix())
+# corr_button.grid(row=4, column=0, padx=10, pady=10, sticky='nesw')
 
 ''' ML results '''
 # Container widget which contains all visualizations
@@ -2842,20 +2851,42 @@ def go_to_ml_results_frame():
     if is_model_trained == False:
         messagebox.showinfo(title="Train model", message="Please select an option to train the Machine Learning model in order to continue the Machine Learning analysis.")
         return
+    
+    
+    # Declare variables as global in order to use it in other function
+    global feature_filename
+
+    # Get the input directory, and save the cleaned dataframe to this directory
+    df_directory = os.path.dirname(feature_filename)
+    df_filename = os.path.basename(feature_filename)
+    df_filename = os.path.splitext(df_filename)[0]
+    save_pdf = "{0}/{1}_ML_results.pdf".format(df_directory, df_filename)
+    
+    # PdfPages is a wrapper around PDF file so there is no clash and create files with no error
+    pdf_writer = PdfPages(save_pdf) 
 
     # Only calculate feature importances if the ML model has decision trees
     if type(ml_model) == sklearn.ensemble._forest.RandomForestClassifier:
         # Embed features importances in results part
-        embed_feature_importances(master=scrollable_visualization_frame.interior)
+        feature_importance_figure = embed_feature_importances(master=scrollable_visualization_frame.interior)
+        # Write feature importance plot to PDF
+        feature_importance_figure.savefig(pdf_writer, format="pdf")
 
     # Embed correlation matrix in results part
-    embed_correlation_matrix(master=scrollable_visualization_frame.interior)
+    correlation_figure = embed_correlation_matrix(master=scrollable_visualization_frame.interior)
+    # Write correlation plot to PDF
+    correlation_figure.savefig(pdf_writer, format="pdf")
+
+    # Close the PDF writer
+    pdf_writer.close()
     
-    # Make inactive (grey) navigation button active (white)
-    ttk.Style().configure("Model_results_style.TButton", foreground='#FFFFFF')
+    # Show incompleted active button (white) is now completed (limegreen)
+    ttk.Style().configure("Train_model_style.TButton", foreground='#32cd32')
     # Increase navigation index to 5 to make 'ML results' available
     if navigation_index < 5:
         navigation_index = 5
+        # Show inactive (grey) navigation button as completed (limegreen)
+        ttk.Style().configure("Model_results_style.TButton", foreground='#32cd32')
 
     # Forget all ML analysis packs
     forget_packs()
@@ -2863,24 +2894,31 @@ def go_to_ml_results_frame():
     ml_results_frame.pack(fill='both', expand=True) # .Pack places block of the ML results frame widget
 
 
-# Function to write your own Python analysis script
-def feature_importances():
-    # Calculate feature importances
-    feature_importance = ml_model.feature_importances_
-    # Calculate Standard deviation
-    std = np.std([tree.feature_importances_ for tree in ml_model.estimators_], axis=0)
-    # Get feature names
-    feature_names = X.columns
-    # Get all features and their importances in a nice overview
-    forest_importances = pd.Series(feature_importance, index=feature_names)
-    
-    # Plot all feature importances
-    fig, ax = plt.subplots()
-    forest_importances.plot.bar(yerr=std, ax=ax)
-    ax.set_title("Feature importances using MDI") # Mean Decrease in Impurity
-    ax.set_ylabel("Mean Decrease in Impurity")
-    fig.tight_layout()
-    plt.show()
+# Change colors of the visualisation corresponding to light theme or dark mode
+def figure_colors(figure):
+    # Get color ids for dark theme
+    if theme=='dark':
+        bgcolor='#1c1c1c'
+        axiscolour='#ecf3fa'
+    # Get color ids for light theme
+    else:
+        bgcolor='#fafafa'
+        axiscolour='#221c1c'
+
+    # Change colors of figures to dark or light theme
+    figure.set_facecolor(bgcolor)
+    for ax in figure.axes:
+        ax.set_facecolor(bgcolor)
+        # Change the other colours
+        ax.xaxis.label.set_color(axiscolour)
+        ax.yaxis.label.set_color(axiscolour)
+        for side in ['top', 'bottom', 'left', 'right']:
+            ax.spines[side].set_color(axiscolour)
+        ax.tick_params(axis='x', colors=axiscolour)
+        ax.tick_params(axis='y', colors=axiscolour)
+        ax.set_title(label=ax.get_title(),color=axiscolour)
+
+    return figure
 
 
 # Embed feature importances in GUI
@@ -2897,11 +2935,35 @@ def embed_feature_importances(master):
     # Figure that will contain the Feature importances
     importancy_figure = Figure(figsize=(10, 7))
     importancy_subplot = importancy_figure.add_subplot(1, 1, 1)  # Add subplot (nrows, ncols, index)
-    # Plot forest importances
-    forest_importances.plot.bar(yerr=std, ax=importancy_subplot) # Add forest importances to Matplotlib axes
+    # Plot error bars first
+    importancy_subplot.errorbar(
+        x=range(len(forest_importances)),
+        y=forest_importances,
+        yerr=std,
+        fmt='none',  # No markers, only error bars
+        ecolor="#ff00e4",
+        elinewidth=0.5,
+        capsize=3,
+        capthick=0.5,
+    )
+
+    # Plot bars after the error bars
+    forest_importances.plot.bar(
+        ax=importancy_subplot,
+        color="#00ffd4",
+        width=0.8,  # Adjust width if needed
+    )    # Plot forest importances
+    # forest_importances.plot.bar(yerr=std, ax=importancy_subplot, capsize=3,                     # Add forest importances to Matplotlib axes
+    #                             color="#00ffd4",                                                # Color of the bar: Neon blue/green
+    #                             error_kw=dict(ecolor="#ff00e4", elinewidth=0.5, capwidth=0.5))  # Color of the error bar: Neon pink
     importancy_subplot.set_title("Feature importances using MDI") # Mean Decrease in Impurity
     importancy_subplot.set_ylabel("Mean Decrease in Impurity")
     importancy_figure.tight_layout() # Show all feature columns
+
+    # Change the colors of the importancy figure to the current theme
+    importancy_figure = figure_colors(importancy_figure)
+    # Neon bar colors #00ffd4 Neon blue #ff00e4 Neon pink
+    # importancy_subplot.set_color("#ff00e4")
 
     # Creating the TKinter canvas containing the feature importancies
     plot_canvas = FigureCanvasTkAgg(importancy_figure, master=master)  
@@ -2913,6 +2975,8 @@ def embed_feature_importances(master):
     toolbar.update()
     plot_canvas.draw() # Draw the feature importancies on the canvas
 
+    return importancy_figure
+
 
 # Embed correlation matrix in GUI
 def embed_correlation_matrix(master):
@@ -2923,7 +2987,23 @@ def embed_correlation_matrix(master):
     if is_model_trained == False:
         # Drop all non-feature columns
         X = prepped_df.drop(["Well", "Label", "Active_electrodes", "Index"], axis=1) # Extracted features
-    
+
+    # Create RGB Neon colors
+    neon_pink = [0, 255, 212]
+    neon_blue = [255, 0, 228]
+
+    # Divide by 256 to fit in np.linspace range (0-1)
+    rgb_intensity_range = 256
+    neon_pink = np.divide(neon_pink, rgb_intensity_range)
+    neon_blue = np.divide(neon_blue, rgb_intensity_range)
+
+    # Create RGB Neon color map (blue to pink)
+    rgb_values = np.ones((rgb_intensity_range, 4)) # 4D RGBA matrix
+    rgb_values[:, 0] = np.linspace(neon_blue[0], neon_pink[0], rgb_intensity_range) # Red intensity values
+    rgb_values[:, 1] = np.linspace(neon_blue[1], neon_pink[1], rgb_intensity_range) # Green intensity values
+    rgb_values[:, 2] = np.linspace(neon_blue[2], neon_pink[2], rgb_intensity_range) # Blue intensity values
+    neon_colormap = ListedColormap(rgb_values)
+
     # Round all correlation values on 2 decimals
     correlation_df = round(X.corr(), 2)
 
@@ -2931,9 +3011,12 @@ def embed_correlation_matrix(master):
     correlation_figure = Figure(figsize=(10, 8))
     correlation_subplot = correlation_figure.add_subplot(1, 1, 1)  # Add subplot (nrows, ncols, index)
     # Seaborn heatmap for visualizing the correlation matrix of all features
-    correlation_matrix = sns.heatmap(correlation_df, vmin=-1, vmax=1, center=0, cmap=sns.diverging_palette(50, 500, n=500), square=True, ax=correlation_subplot) # Add heatmap to Matplotlib axes
+    correlation_matrix = sns.heatmap(correlation_df, vmin=-1, vmax=1, center=0, cmap=neon_colormap, square=True, ax=correlation_subplot) # Add heatmap to Matplotlib axes
     correlation_matrix.set_title("Correlation matrix of all MEA features") # Set title of subplot figure
     correlation_figure.tight_layout() # Show all feature columns
+    
+    # Change the colors of the importancy figure to the current theme
+    correlation_figure = figure_colors(correlation_figure)
 
     # Creating the TKinter canvas containing the correlation matrix
     plot_canvas = FigureCanvasTkAgg(correlation_figure, master=master)  
@@ -2944,6 +3027,28 @@ def embed_correlation_matrix(master):
     toolbar = NavigationToolbar2Tk(plot_canvas, toolbar_frame)
     toolbar.update()
     plot_canvas.draw() # Draw the correlation matrix on the canvas
+
+    return correlation_figure
+
+
+# Function to write your own Python analysis script
+def feature_importances():
+    # Calculate feature importances
+    feature_importance = ml_model.feature_importances_
+    # Calculate Standard deviation
+    std = np.std([tree.feature_importances_ for tree in ml_model.estimators_], axis=0)
+    # Get feature names
+    feature_names = X.columns
+    # Get all features and their importances in a nice overview
+    forest_importances = pd.Series(feature_importance, index=feature_names)
+    
+    # Plot all feature importances
+    fig, ax = plt.subplots()
+    forest_importances.plot.bar(yerr=std, ax=ax, capsize=2)
+    ax.set_title("Feature importances using MDI") # Mean Decrease in Impurity
+    ax.set_ylabel("Mean Decrease in Impurity")
+    fig.tight_layout()
+    plt.show()
 
 # Compute a correlation matrix and select features
 def get_correlation_matrix():
