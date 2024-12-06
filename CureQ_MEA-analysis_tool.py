@@ -2668,7 +2668,7 @@ def train_model():
     global prepped_df
     global selected_x_train_set
     global ml_model
-    global X
+    global X, y_test, y_pred
 
     # Check whether list is empty
     if not selected_x_train_set:
@@ -2852,6 +2852,21 @@ def go_to_ml_results_frame():
         messagebox.showinfo(title="Train model", message="Please select an option to train the Machine Learning model in order to continue the Machine Learning analysis.")
         return
     
+    # Create RGB Neon colors
+    neon_pink = [0, 255, 212]
+    neon_blue = [255, 0, 228]
+
+    # Divide by 256 to fit in np.linspace range (0-1)
+    rgb_intensity_range = 256
+    neon_pink = np.divide(neon_pink, rgb_intensity_range)
+    neon_blue = np.divide(neon_blue, rgb_intensity_range)
+
+    # Create RGB Neon color map (blue to pink)
+    rgb_values = np.ones((rgb_intensity_range, 4)) # 4D RGBA matrix
+    rgb_values[:, 0] = np.linspace(neon_blue[0], neon_pink[0], rgb_intensity_range) # Red intensity values
+    rgb_values[:, 1] = np.linspace(neon_blue[1], neon_pink[1], rgb_intensity_range) # Green intensity values
+    rgb_values[:, 2] = np.linspace(neon_blue[2], neon_pink[2], rgb_intensity_range) # Blue intensity values
+    neon_colormap = ListedColormap(rgb_values)
     
     # Declare variables as global in order to use it in other function
     global feature_filename
@@ -2873,9 +2888,14 @@ def go_to_ml_results_frame():
         feature_importance_figure.savefig(pdf_writer, format="pdf")
 
     # Embed correlation matrix in results part
-    correlation_figure = embed_correlation_matrix(master=scrollable_visualization_frame.interior)
+    correlation_figure = embed_correlation_matrix(master=scrollable_visualization_frame.interior, colormap=neon_colormap)
     # Write correlation plot to PDF
     correlation_figure.savefig(pdf_writer, format="pdf")
+
+    # Embed confusion matrix in results part
+    confusion_figure = embed_confusion_matrix(master=scrollable_visualization_frame.interior, colormap=neon_colormap)
+    # Write correlation plot to PDF
+    confusion_figure.savefig(pdf_writer, format="pdf")
 
     # Close the PDF writer
     pdf_writer.close()
@@ -2979,7 +2999,7 @@ def embed_feature_importances(master):
 
 
 # Embed correlation matrix in GUI
-def embed_correlation_matrix(master):
+def embed_correlation_matrix(master, colormap):
     # Declare variables as global in order to use it in other function
     global X
 
@@ -2988,21 +3008,6 @@ def embed_correlation_matrix(master):
         # Drop all non-feature columns
         X = prepped_df.drop(["Well", "Label", "Active_electrodes", "Index"], axis=1) # Extracted features
 
-    # Create RGB Neon colors
-    neon_pink = [0, 255, 212]
-    neon_blue = [255, 0, 228]
-
-    # Divide by 256 to fit in np.linspace range (0-1)
-    rgb_intensity_range = 256
-    neon_pink = np.divide(neon_pink, rgb_intensity_range)
-    neon_blue = np.divide(neon_blue, rgb_intensity_range)
-
-    # Create RGB Neon color map (blue to pink)
-    rgb_values = np.ones((rgb_intensity_range, 4)) # 4D RGBA matrix
-    rgb_values[:, 0] = np.linspace(neon_blue[0], neon_pink[0], rgb_intensity_range) # Red intensity values
-    rgb_values[:, 1] = np.linspace(neon_blue[1], neon_pink[1], rgb_intensity_range) # Green intensity values
-    rgb_values[:, 2] = np.linspace(neon_blue[2], neon_pink[2], rgb_intensity_range) # Blue intensity values
-    neon_colormap = ListedColormap(rgb_values)
 
     # Round all correlation values on 2 decimals
     correlation_df = round(X.corr(), 2)
@@ -3011,11 +3016,11 @@ def embed_correlation_matrix(master):
     correlation_figure = Figure(figsize=(10, 8))
     correlation_subplot = correlation_figure.add_subplot(1, 1, 1)  # Add subplot (nrows, ncols, index)
     # Seaborn heatmap for visualizing the correlation matrix of all features
-    correlation_matrix = sns.heatmap(correlation_df, vmin=-1, vmax=1, center=0, cmap=neon_colormap, square=True, ax=correlation_subplot) # Add heatmap to Matplotlib axes
+    correlation_matrix = sns.heatmap(correlation_df, vmin=-1, vmax=1, center=0, cmap=colormap, square=True, ax=correlation_subplot) # Add heatmap to Matplotlib axes
     correlation_matrix.set_title("Correlation matrix of all MEA features") # Set title of subplot figure
     correlation_figure.tight_layout() # Show all feature columns
     
-    # Change the colors of the importancy figure to the current theme
+    # Change the colors of the figure to the current theme
     correlation_figure = figure_colors(correlation_figure)
 
     # Creating the TKinter canvas containing the correlation matrix
@@ -3029,6 +3034,42 @@ def embed_correlation_matrix(master):
     plot_canvas.draw() # Draw the correlation matrix on the canvas
 
     return correlation_figure
+
+# Function to write your own Python analysis script
+def embed_confusion_matrix(master, colormap):
+    from sklearn.metrics import confusion_matrix
+
+    # Declare variables as global in order to use it in other function
+    global X, y_test, y_pred, prepped_df
+
+    # Compute Confusion Matrix with confusion_matrix from sklearn.metrics
+    label_order = list(prepped_df["Label"].unique())
+    cm = confusion_matrix(y_test, y_pred, labels=label_order)
+
+    # Figure that will contain the confusion matrix
+    confusion_figure = Figure(figsize=(10, 8))
+    confusion_subplot = confusion_figure.add_subplot(1, 1, 1)  # Add subplot (nrows, ncols, index)
+    # Visualise confusion matrix with heatmap from seaborn (sns)
+    confusion_heatmap = sns.heatmap(cm, annot=True, fmt='g', cmap=colormap, xticklabels=label_order, yticklabels=label_order, ax=confusion_subplot) # Add heatmap to Matplotlib axes
+    confusion_heatmap.set_title("Confusion matrix of all labels") # Set title of subplot figure
+    confusion_heatmap.set_ylabel("Actual label")
+    confusion_heatmap.set_xlabel("Predicted label")
+    confusion_figure.tight_layout() # Show all feature columns
+    
+    # Change the colors of the figure to the current theme
+    confusion_figure = figure_colors(confusion_figure)
+
+    # Creating the TKinter canvas containing the confusion matrix
+    plot_canvas = FigureCanvasTkAgg(confusion_figure, master=master)  
+    plot_canvas.get_tk_widget().grid(row=4, column=0, padx=10, pady=10, sticky='nsew') # Place the canvas on the Tkinter window
+    # Add Matplotlib navigation toolbar
+    toolbar_frame = ttk.Frame(master=master)
+    toolbar_frame.grid(row=5, column=0, sticky='s')
+    toolbar = NavigationToolbar2Tk(plot_canvas, toolbar_frame)
+    toolbar.update()
+    plot_canvas.draw() # Draw the confusion matrix on the canvas
+
+    return confusion_figure
 
 
 # Function to write your own Python analysis script
@@ -3069,9 +3110,6 @@ def get_correlation_matrix():
 def network_bursts():
     messagebox.showinfo(title="Coming Soon...", message="This feature is not published yet.")
 
-# Function to write your own Python analysis script
-def confusion_matrices():
-    messagebox.showinfo(title="Coming Soon...", message="This feature is not published yet.")
 
 # Function to write your own Python analysis script
 def performance_metrics():
