@@ -2794,35 +2794,10 @@ Front-end lay-out of the ML results frame
 # Results frame - Rectangular window which is used to organize a group of complex widgets
 ml_results_frame = ttk.Frame(root)
 
-# ''' Visualization options '''
-# # Container widget where the user can view the results of the just trained ML model
-# visualization_options = ttk.LabelFrame(master=ml_results_frame, text='ML results', style="Custom.TLabelframe")
-# visualization_options.grid(row=0, column=1, padx=10, pady=10, sticky='new')
-
-# # Button to show a bar plot which shows the feature importance of each feature
-# feature_importance_button = ttk.Button(master=visualization_options, text="Feature Importances", command=lambda: feature_importances())
-# feature_importance_button.grid(row=0, column=0, padx=10, pady=10, sticky='nesw')
-
-# # Button to show a confusion matrix between with the disease/control ratio
-# cm_button = ttk.Button(master=visualization_options, text="Confusion Matrix", command=lambda: confusion_matrices())
-# cm_button.grid(row=1, column=0, padx=10, pady=10, sticky='nesw')
-
-# # Button to show a bar plot with the amount of network bursts per well
-# network_bursts_button = ttk.Button(master=visualization_options, text="Network Bursts", command=lambda: network_bursts())
-# network_bursts_button.grid(row=2, column=0, padx=10, pady=10, sticky='nesw')
-
-# # Button to show a bar plot which shows the accuracy score of each feature
-# acc_button = ttk.Button(master=visualization_options, text="Performance metrics", command=lambda: performance_metrics())
-# acc_button.grid(row=3, column=0, padx=10, pady=10, sticky='nesw')
-
-# # Button to show the correlation matrix of all MEA features
-# corr_button = ttk.Button(master=visualization_options, text="Correlation Matrix", command=lambda: get_correlation_matrix())
-# corr_button.grid(row=4, column=0, padx=10, pady=10, sticky='nesw')
-
 ''' ML results '''
 # Container widget which contains all visualizations
 visualization_frame = ttk.LabelFrame(ml_results_frame, text="Machine Learning results", style="Custom.TLabelframe")
-visualization_frame.grid(row=0, column=2, padx=10, pady=10, sticky='nesw')
+visualization_frame.grid(row=0, column=1, rowspan=100, padx=10, pady=10, sticky='nesw')
 
 # Add a scrollable instance frame inside the LabelFrame
 scrollable_visualization_frame = VerticalScrolledFrame(visualization_frame)
@@ -2831,10 +2806,15 @@ scrollable_visualization_frame.grid(row=0, column=0, padx=10, pady=10, sticky='n
 ''' Sidebar '''
 # Sidebar container widget where the user can navigate fast through the ML pipeline
 navigation_menu_5 = ttk.LabelFrame(master=ml_results_frame, text='Navigation', style="Custom.TLabelframe")
-navigation_menu_5.grid(row=0, column=0, rowspan=100, padx=10, pady=10, sticky='new')
+navigation_menu_5.grid(row=0, column=0, padx=10, pady=10, sticky='new')
 
 # Dynamic navigation menu
 dynamic_navigation_menu(master=navigation_menu_5)
+
+# Button to choose the colors for plot results
+color_picker = ttk.Button(master=ml_results_frame, text="Select result colors", command=lambda: get_plot_colors())
+color_picker.grid(row=1, column=0, padx=10, pady=(20, 15), sticky='new')
+
 
 '''
 Back-end - Functions for all ML results
@@ -2852,21 +2832,20 @@ def go_to_ml_results_frame():
         messagebox.showinfo(title="Train model", message="Please select an option to train the Machine Learning model in order to continue the Machine Learning analysis.")
         return
     
-    # Create RGB Neon colors
-    neon_pink = [0, 255, 212]
-    neon_blue = [255, 0, 228]
+    # Show incompleted active button (white) is now completed (limegreen)
+    ttk.Style().configure("Train_model_style.TButton", foreground='#32cd32')
+    # Increase navigation index to 5 to make 'ML results' available
+    if navigation_index < 5:
+        navigation_index = 5
+        # Show inactive (grey) navigation button as completed (limegreen)
+        ttk.Style().configure("Model_results_style.TButton", foreground='#32cd32')
 
-    # Divide by 256 to fit in np.linspace range (0-1)
-    rgb_intensity_range = 256
-    neon_pink = np.divide(neon_pink, rgb_intensity_range)
-    neon_blue = np.divide(neon_blue, rgb_intensity_range)
+        global primary_RGB, secondary_RGB
+        primary_RGB   = [0, 255, 212] # Neon pink
+        secondary_RGB = [255, 0, 228] # Neon blue
 
-    # Create RGB Neon color map (blue to pink)
-    rgb_values = np.ones((rgb_intensity_range, 4)) # 4D RGBA matrix
-    rgb_values[:, 0] = np.linspace(neon_blue[0], neon_pink[0], rgb_intensity_range) # Red intensity values
-    rgb_values[:, 1] = np.linspace(neon_blue[1], neon_pink[1], rgb_intensity_range) # Green intensity values
-    rgb_values[:, 2] = np.linspace(neon_blue[2], neon_pink[2], rgb_intensity_range) # Blue intensity values
-    neon_colormap = ListedColormap(rgb_values)
+    # Color map of chosen colors
+    colormap = get_color_map()
     
     # Declare variables as global in order to use it in other function
     global feature_filename
@@ -2888,26 +2867,18 @@ def go_to_ml_results_frame():
         feature_importance_figure.savefig(pdf_writer, format="pdf")
 
     # Embed correlation matrix in results part
-    correlation_figure = embed_correlation_matrix(master=scrollable_visualization_frame.interior, colormap=neon_colormap)
+    correlation_figure = embed_correlation_matrix(master=scrollable_visualization_frame.interior, colormap=colormap)
     # Write correlation plot to PDF
     correlation_figure.savefig(pdf_writer, format="pdf")
 
     # Embed confusion matrix in results part
-    confusion_figure = embed_confusion_matrix(master=scrollable_visualization_frame.interior, colormap=neon_colormap)
+    confusion_figure = embed_confusion_matrix(master=scrollable_visualization_frame.interior, colormap=colormap)
     # Write correlation plot to PDF
     confusion_figure.savefig(pdf_writer, format="pdf")
 
     # Close the PDF writer
     pdf_writer.close()
     
-    # Show incompleted active button (white) is now completed (limegreen)
-    ttk.Style().configure("Train_model_style.TButton", foreground='#32cd32')
-    # Increase navigation index to 5 to make 'ML results' available
-    if navigation_index < 5:
-        navigation_index = 5
-        # Show inactive (grey) navigation button as completed (limegreen)
-        ttk.Style().configure("Model_results_style.TButton", foreground='#32cd32')
-
     # Forget all ML analysis packs
     forget_packs()
     # Go to results frame
@@ -2941,8 +2912,59 @@ def figure_colors(figure):
     return figure
 
 
+# Choose the primary and secondary colors for the plot results
+def get_plot_colors():
+    from ttkwidgets.color import askcolor
+    global primary_RGB, secondary_RGB
+
+    # Default RGB color codes
+    default_primary_RGB = [0, 255, 212]   # Neon pink
+    default_secondary_RGB = [255, 0, 228] # Neon blue
+
+    # Store RGB code of primary color (Default = neon pink)
+    primary_RGB = askcolor(color=default_primary_RGB, title="Choose first primary color for all results")[0]
+
+    # Store RGB code of primary color (Default = neon blue)
+    secondary_RGB = askcolor(color=default_secondary_RGB, title="Choose second primary color for all results")[0]
+
+    # Select default primary color code (Neon pink) if None is selected
+    if primary_RGB == None:
+        primary_RGB = default_primary_RGB
+    # Select default secondary color code (Neon blue) if None is selected
+    if secondary_RGB == None:
+        secondary_RGB = default_secondary_RGB
+
+    # Reload ML results frame to show the newly picked colors
+    go_to_ml_results_frame()
+
+
+# Get color map with chosen (or default) colors
+def get_color_map():    
+    # Get default or chosen RGB colors
+    global primary_RGB, secondary_RGB
+
+    # Divide by 256 to fit in np.linspace range (0-1)
+    RGB_intensity_range = 256
+    primary_RGB_divided = np.divide(primary_RGB, RGB_intensity_range)
+    secondary_RGB_divided = np.divide(secondary_RGB, RGB_intensity_range)
+
+    # Create RGB Neon color map (blue to pink)
+    RGB_values = np.ones((RGB_intensity_range, 4)) # 4D RGBA matrix
+    RGB_values[:, 0] = np.linspace(secondary_RGB_divided[0], primary_RGB_divided[0], RGB_intensity_range) # Red intensity values
+    RGB_values[:, 1] = np.linspace(secondary_RGB_divided[1], primary_RGB_divided[1], RGB_intensity_range) # Green intensity values
+    RGB_values[:, 2] = np.linspace(secondary_RGB_divided[2], primary_RGB_divided[2], RGB_intensity_range) # Blue intensity values
+
+    return ListedColormap(RGB_values)
+
+
 # Embed feature importances in GUI
 def embed_feature_importances(master):
+    # Get default or chosen RGB colors
+    global primary_RGB, secondary_RGB
+    # RGB color codes to hex
+    primary_hex = '#%02x%02x%02x' % (primary_RGB[0], primary_RGB[1], primary_RGB[2])
+    secondary_hex = '#%02x%02x%02x' % (secondary_RGB[0], secondary_RGB[1], secondary_RGB[2])
+
     # Calculate feature importances
     feature_importance = ml_model.feature_importances_
     # Calculate Standard deviation
@@ -2961,7 +2983,7 @@ def embed_feature_importances(master):
         y=forest_importances,
         yerr=std,
         fmt='none',  # No markers, only error bars
-        ecolor="#ff00e4",
+        ecolor=secondary_hex,
         elinewidth=0.5,
         capsize=3,
         capthick=0.5,
@@ -2970,7 +2992,7 @@ def embed_feature_importances(master):
     # Plot bars after the error bars
     forest_importances.plot.bar(
         ax=importancy_subplot,
-        color="#00ffd4",
+        color=primary_hex,
         width=0.8,  # Adjust width if needed
     )    # Plot forest importances
     # forest_importances.plot.bar(yerr=std, ax=importancy_subplot, capsize=3,                     # Add forest importances to Matplotlib axes
